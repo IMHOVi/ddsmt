@@ -1,37 +1,49 @@
 package ru.imho.ddsmt.ds
 
 import java.sql.Timestamp
-import java.io.File
-import scala.annotation.tailrec
+import java.io.{FileInputStream, File}
+import java.security.MessageDigest
+import ru.imho.ddsmt.Utils
+import org.apache.commons.codec.binary.Hex
+import ru.imho.ddsmt.Base._
 
 /**
  * Created by skotlov on 11/13/14.
  */
-case class DirectoryDs(path: String)(dsc: DataSetConfig) extends DataSet { // todo redesign param set
+class DirectoryDs(path: String, dsc: DataSetConfig) extends DataSet {
 
-  def value = path
+  def id = path
+
   def dataSetConfig: DataSetConfig = dsc
 
-  override def checksum: String = {
-    "todo" // todo
-    /*
-    final MessageDigest messageDigest = MessageDigest.getInstance("MD5");
-    messageDigest.reset();
-    messageDigest.update(string.getBytes(Charset.forName("UTF8")));
-    final byte[] resultByte = messageDigest.digest();
-    final String result = new String(Hex.encodeHex(resultByte));
+  override def checksum: Option[String] = {
+    val md5 = MessageDigest.getInstance("MD5")
+    val buffer = new Array[Byte](1024)
 
-     */
+    traverseAllFiles(new File(path), f => {
+      if (f.isFile) {
+        Utils.using(new FileInputStream(f)) { is =>
+          var numRead: Int = 0
+          do {
+            numRead = is.read(buffer)
+            if (numRead > 0) {
+              md5.update(buffer, 0, numRead)
+            }
+          } while (numRead != -1)
+        }
+      }
+    })
+
+    Some(Hex.encodeHexString(md5.digest()))
   }
 
-  override def endTimestamp: Timestamp = {
-    val dir = new File(path)
+  override def endTimestamp: Option[Timestamp] = {
     var max = 0L
-    traverseAllFiles(dir, f => { max = Math.max(max, f.lastModified()) })
-    new Timestamp(max)
+    traverseAllFiles(new File(path), f => { max = Math.max(max, f.lastModified()) })
+    Some(new Timestamp(max))
   }
 
-  override def startTimestamp: Timestamp = endTimestamp // todo: startTimestamp != endTimestamp
+  override def startTimestamp: Option[Timestamp] = endTimestamp // todo: startTimestamp != endTimestamp
 
   private def traverseAllFiles(dir: File, h: File => Unit) {
     if (dir.exists()) {

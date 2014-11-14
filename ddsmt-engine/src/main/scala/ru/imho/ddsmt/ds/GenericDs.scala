@@ -1,18 +1,18 @@
 package ru.imho.ddsmt.ds
 
 import java.sql.Timestamp
+import ru.imho.ddsmt.Base._
 
 /**
  * Created by skotlov on 11/13/14.
  */
-case class GenericDs(v: String)(dsc: DataSetConfig) extends DataSet { // todo redesign param set
+class GenericDs(val id: String, dsc: DataSetConfig) extends DataSet {
 
-  def value = v
   def dataSetConfig: DataSetConfig = dsc
 
-  override def checksum: String = throw new UnsupportedOperationException
+  override def checksum: Option[String] = None
 
-  override def endTimestamp: Timestamp = throw new UnsupportedOperationException
+  override def endTimestamp: Option[Timestamp] = None
 
-  override def startTimestamp: Timestamp = throw new UnsupportedOperationException
+  override def startTimestamp: Option[Timestamp] = None
 }

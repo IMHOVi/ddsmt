@@ -1,16 +1,14 @@
 package ru.imho.ddsmt
 
-import ru.imho.ddsmt.params.{ApplyParamException, Param}
 import scalax.collection.edge.LDiEdge
 import scala.annotation.tailrec
-import ru.imho.ddsmt.ds.DataSet
 import scalax.collection.mutable.Graph
-import scalax.collection.GraphEdge.EdgeLike
+import ru.imho.ddsmt.Base._
 
 /**
  * Created by skotlov on 11/13/14.
  */
-class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig]) {
+class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig], storage: Storage) {
 
   val graph = buildGraph(params, rules)
 
@@ -45,7 +43,7 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
           try {
             val in = rule.input.createDataSetInstance(param, paramName)
             val out = rule.output.createDataSetInstance(param, paramName)
-            graph += LDiEdge(in, out)(Rule(in, out, rule.cmd.createCommand(param, paramName)))
+            graph += LDiEdge(in, out)(Rule(rule.name, in, out, rule.cmd.createCommand(param, paramName))(storage))
           } catch {
             case e: ApplyParamException => {}// do nothing // todo use some better solution
           }
@@ -54,7 +52,7 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
       else if (rule.param.isEmpty) {
         val in = rule.input.createDataSetInstance()
         val out = rule.output.createDataSetInstance()
-        graph += LDiEdge(in, out)(Rule(in, out, rule.cmd.createCommand()))
+        graph += LDiEdge(in, out)(Rule(rule.name, in, out, rule.cmd.createCommand())(storage))
       }
       else {
         ???

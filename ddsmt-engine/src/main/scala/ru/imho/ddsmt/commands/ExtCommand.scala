@@ -1,6 +1,6 @@
 package ru.imho.ddsmt.commands
 
-import ru.imho.ddsmt.ds.DataSet
+import ru.imho.ddsmt.Base._
 
 /**
  * Created by skotlov on 11/13/14.
