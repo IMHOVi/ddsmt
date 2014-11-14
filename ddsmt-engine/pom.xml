@@ -1,0 +1,53 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>ru.imho.tools.ddsmt</groupId>
+		<artifactId>ddsmt-parent</artifactId>
+		<version>0.0.1-SNAPSHOT</version>
+	</parent>
+	<artifactId>ddsmt-engine</artifactId>
+	<name>DdsmtEngine</name>
+	<description>DDSMT core engine</description>
+	
+	<properties>
+  		<graph.version>1.9.0</graph.version>	
+	</properties>
+
+	<build>
+		<sourceDirectory>src/main/scala</sourceDirectory>
+		<testSourceDirectory>src/test/scala</testSourceDirectory>
+		<plugins>
+			<!-- Needed even if no java code present - just to set execution environment -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.scala-tools</groupId>
+				<artifactId>maven-scala-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.scalatest</groupId>
+				<artifactId>scalatest-maven-plugin</artifactId>
+			</plugin>
+		</plugins>
+	</build>
+	
+	<dependencies>
+		<!-- 3rd party -->
+		<dependency>
+			<groupId>com.assembla.scala-incubator</groupId>
+			<artifactId>graph-core_2.10</artifactId>
+			<version>${graph.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.assembla.scala-incubator</groupId>
+			<artifactId>graph-dot_2.10</artifactId>
+			<version>${graph.version}</version>
+		</dependency>
+	
+	</dependencies>
+
+</project>
