@@ -12,9 +12,9 @@ import ru.imho.ddsmt.Base._
 case class Hour(year: Int, month: Int, day: Int, hour: Int, prev: Option[Hour]) extends Param {
 
   override def applyToString(str: String, paramName: String): String = {
-    // todo implement something better
+    // todo(postpone): implement something better
     if(str.contains("${"+ paramName +".prev") && prev.isEmpty) {
-      throw new ApplyParamException
+      throw new RuntimeException // todo
     }
 
     val r = str.replace("${"+ paramName +"}", toString)
@@ -50,7 +50,7 @@ object Hour {
     val cex = new CronExpression(cronExpression)
     val hours = ArrayBuffer[Hour]()
     var date = cex.getNextValidTimeAfter(new Date(0))
-    var prevHour: Option[Hour] = None
+    var prevHour: Option[Hour] = Some(new Hour(0, 0, 0, 0, None)) // None todo
 
     while (date != null) {
       val dt = new DateTime(date.getTime)

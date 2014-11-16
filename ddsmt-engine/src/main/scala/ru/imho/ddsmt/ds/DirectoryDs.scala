@@ -19,9 +19,11 @@ class DirectoryDs(path: String, dsc: DataSetConfig) extends DataSet {
   override def checksum: Option[String] = {
     val md5 = MessageDigest.getInstance("MD5")
     val buffer = new Array[Byte](1024)
+    var empty = true
 
     traverseAllFiles(new File(path), f => {
       if (f.isFile) {
+        empty = false
         Utils.using(new FileInputStream(f)) { is =>
           var numRead: Int = 0
           do {
@@ -34,16 +36,14 @@ class DirectoryDs(path: String, dsc: DataSetConfig) extends DataSet {
       }
     })
 
-    Some(Hex.encodeHexString(md5.digest()))
+    if (empty) None else Some(Hex.encodeHexString(md5.digest()))
   }
 
-  override def endTimestamp: Option[Timestamp] = {
+  override def timestamp: Option[Timestamp] = {
     var max = 0L
     traverseAllFiles(new File(path), f => { max = Math.max(max, f.lastModified()) })
-    Some(new Timestamp(max))
+    if (max == 0L) None else Some(new Timestamp(max))
   }
-
-  override def startTimestamp: Option[Timestamp] = endTimestamp // todo: startTimestamp != endTimestamp
 
   private def traverseAllFiles(dir: File, h: File => Unit) {
     if (dir.exists()) {

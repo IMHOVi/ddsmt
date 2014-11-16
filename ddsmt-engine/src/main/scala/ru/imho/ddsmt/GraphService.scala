@@ -1,9 +1,9 @@
 package ru.imho.ddsmt
 
-import scalax.collection.edge.LDiEdge
 import scala.annotation.tailrec
 import scalax.collection.mutable.Graph
 import ru.imho.ddsmt.Base._
+import scalax.collection.GraphEdge.DiEdge
 
 /**
  * Created by skotlov on 11/13/14.
@@ -13,46 +13,57 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
   val graph = buildGraph(params, rules)
 
   def run() = {
-    val roots = graph.nodes.filter(_.diPredecessors.isEmpty)
-    executeOutgoingEdgesOfCompletedNodes(roots.toSet, Set())
+    executeRules(Set())
   }
 
   @tailrec
-  private def executeOutgoingEdgesOfCompletedNodes(nodeToExec: Set[graph.NodeT], executedNodes: Set[graph.NodeT]) {
-    val execNodes = nodeToExec.map(n => {
-      n.outgoing.foreach(e => e.label.asInstanceOf[Rule].execute())
-      n
-    })
-    val newExecutedNodes = executedNodes ++ execNodes
+  private def executeRules(executedRules: Set[Rule]) {
 
-    val newNodeToExec = graph.nodes.filter(n => !newExecutedNodes.contains(n) && (n.diPredecessors.isEmpty || n.diPredecessors.forall(p => newExecutedNodes.contains(p))))
-    if (!newNodeToExec.isEmpty) {
-      executeOutgoingEdgesOfCompletedNodes(newNodeToExec.toSet, newExecutedNodes)
+    def isRuleExecuted(rule: graph.NodeT) = executedRules.contains(rule.value.asInstanceOf[Rule])
+
+    def isDsReady(ds: graph.NodeT) = {
+      ds.diPredecessors.isEmpty ||
+        ds.diPredecessors.forall(rule => isRuleExecuted(rule))
+    }
+
+    def isRuleReadyToExecute(rule: graph.NodeT) = {
+      rule.diPredecessors.forall(ds => isDsReady(ds))
+    }
+
+    val ruleToExec = graph.nodes.filter(n => n.value.isInstanceOf[Rule] && !isRuleExecuted(n) && isRuleReadyToExecute(n))
+      .map(_.value.asInstanceOf[Rule])
+
+    if (!ruleToExec.isEmpty) {
+      ruleToExec.foreach(_.execute())
+      executeRules(executedRules ++ ruleToExec)
     }
   }
 
   def runInParallel(degree: Int) = ???
 
-  private def buildGraph(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig]): Graph[DataSet, LDiEdge] = {
-    val graph = Graph[DataSet, LDiEdge]()
+  private def buildGraph(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig]): Graph[Node, DiEdge] = {
+    val graph = Graph[Node, DiEdge]()
 
-    rules.foreach(rule => {
-      if (rule.param.isDefined && rule.param.get.paramPolicy == ParamPolicy.forEach) {
-        val paramName = rule.param.get.paramName
+    def addRule(in: Iterable[DataSet], out: Iterable[DataSet], rule: Rule) {
+      in.foreach(i => graph += DiEdge(i, rule))
+      out.foreach(o => graph += DiEdge(rule, o))
+    }
+
+    rules.foreach(ruleConf => {
+      if (ruleConf.param.isDefined && ruleConf.param.get.paramPolicy == ParamPolicy.forEach) {
+        val paramName = ruleConf.param.get.paramName
         params(paramName).foreach(param => {
-          try {
-            val in = rule.input.createDataSetInstance(param, paramName)
-            val out = rule.output.createDataSetInstance(param, paramName)
-            graph += LDiEdge(in, out)(Rule(rule.name, in, out, rule.cmd.createCommand(param, paramName))(storage))
-          } catch {
-            case e: ApplyParamException => {}// do nothing // todo use some better solution
-          }
+          val in = ruleConf.input.map(_.createDataSetInstance(param, paramName))
+          val out = ruleConf.output.map(_.createDataSetInstance(param, paramName))
+          val rule = Rule(ruleConf.name, in, out, ruleConf.cmd.createCommand(param, paramName))(storage)
+          addRule(in, out, rule)
         })
       }
-      else if (rule.param.isEmpty) {
-        val in = rule.input.createDataSetInstance()
-        val out = rule.output.createDataSetInstance()
-        graph += LDiEdge(in, out)(Rule(rule.name, in, out, rule.cmd.createCommand())(storage))
+      else if (ruleConf.param.isEmpty) {
+        val in = ruleConf.input.map(_.createDataSetInstance())
+        val out = ruleConf.output.map(_.createDataSetInstance())
+        val rule = Rule(ruleConf.name, in, out, ruleConf.cmd.createCommand())(storage)
+        addRule(in, out, rule)
       }
       else {
         ???

@@ -7,7 +7,7 @@ import ru.imho.ddsmt.Base._
  */
 class ExtCommand(commands: Iterable[String]) extends Command {
 
-  override def execute(input: DataSet, output: DataSet): Unit = {
+  override def execute(input: Iterable[DataSet], output: Iterable[DataSet]): Unit = {
     import scala.collection.JavaConversions._
     val pb = new ProcessBuilder(commands.toList)
     val p = pb.start()

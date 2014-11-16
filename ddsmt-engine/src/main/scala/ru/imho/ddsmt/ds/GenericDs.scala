@@ -12,7 +12,5 @@ class GenericDs(val id: String, dsc: DataSetConfig) extends DataSet {
 
   override def checksum: Option[String] = None
 
-  override def endTimestamp: Option[Timestamp] = None
-
-  override def startTimestamp: Option[Timestamp] = None
+  override def timestamp: Option[Timestamp] = None
 }

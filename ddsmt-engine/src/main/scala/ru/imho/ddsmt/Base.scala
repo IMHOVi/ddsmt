@@ -7,17 +7,17 @@ import java.sql.Timestamp
  */
 object Base {
 
+  trait Node
+
   // DataSet
 
-  trait DataSet {
+  trait DataSet extends Node {
 
     def id: String
 
     def dataSetConfig: DataSetConfig
 
-    def startTimestamp: Option[Timestamp]
-
-    def endTimestamp: Option[Timestamp]
+    def timestamp: Option[Timestamp]
 
     def checksum: Option[String]
 
@@ -61,7 +61,7 @@ object Base {
 
   trait Command {
 
-    def execute(input: DataSet, output: DataSet)
+    def execute(input: Iterable[DataSet], output: Iterable[DataSet])
   }
 
   // Param
@@ -71,8 +71,6 @@ object Base {
     def applyToString(str: String, paramName: String): String
   }
 
-  class ApplyParamException extends RuntimeException
-
   // Storage
 
   trait Storage {
@@ -80,5 +78,9 @@ object Base {
     def getLastKnownChecksum(dataSetId: String, ruleName: String): Option[String]
 
     def setLastKnownChecksum(dataSetId: String, ruleName: String)(checksum: Option[String])
+
+    def getLastKnownTimestamp(dataSetId: String, ruleName: String): Option[Timestamp]
+
+    def setLastKnownTimestamp(dataSetId: String, ruleName: String)(timestamp: Option[Timestamp])
   }
 }
