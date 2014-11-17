@@ -47,17 +47,7 @@
 			<version>${graph.version}</version>
 		</dependency>
 
-        <!-- Time -->
-        <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-            <version>2.5</version>
-        </dependency>
-        <dependency>
-            <groupId>org.joda</groupId>
-            <artifactId>joda-convert</artifactId>
-            <version>1.7</version>
-        </dependency>
+        <!-- Cron parser -->
         <dependency>
             <groupId>org.quartz-scheduler</groupId>
             <artifactId>quartz</artifactId>

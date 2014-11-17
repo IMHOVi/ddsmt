@@ -9,7 +9,7 @@ import java.sql.Timestamp
  * Created by skotlov on 11/14/14.
  */
 class StorageImpl(fileName: String) extends Storage with Closeable {
-  // todo(postpone): 1) cleanup storage? 2) consider move to h2?
+  // todo(postpone): 1) cleanup storage 2) move to h2
 
   val recordManager = RecordManagerFactory.createRecordManager(fileName)
   val lastKnownChecksums = recordManager.hashMap[String, Option[String]]("lastKnownChecksums")
@@ -24,7 +24,6 @@ class StorageImpl(fileName: String) extends Storage with Closeable {
 
   override def setLastKnownChecksum(dataSetId: String, ruleName: String)(checksum: Option[String]): Unit = {
     lastKnownChecksums.put(key(dataSetId, ruleName), checksum)
-    recordManager.commit()
   }
 
   override def getLastKnownTimestamp(dataSetId: String, ruleName: String): Option[Timestamp] = {
@@ -36,7 +35,6 @@ class StorageImpl(fileName: String) extends Storage with Closeable {
 
   override def setLastKnownTimestamp(dataSetId: String, ruleName: String)(timestamp: Option[Timestamp]): Unit = {
     lastKnownTimestamps.put(key(dataSetId, ruleName), timestamp)
-    recordManager.commit()
   }
 
   private def key(dataSetId: String, ruleName: String) = "ds:%s::rn:%s".format(dataSetId, ruleName)
@@ -44,4 +42,8 @@ class StorageImpl(fileName: String) extends Storage with Closeable {
   override def close() {
     recordManager.close()
   }
+
+  override def rollback(): Unit = recordManager.rollback()
+
+  override def commit(): Unit = recordManager.commit()
 }

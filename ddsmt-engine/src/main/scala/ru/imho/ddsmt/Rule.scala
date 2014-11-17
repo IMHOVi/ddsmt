@@ -7,9 +7,25 @@ import ru.imho.ddsmt.Base._
   */
 case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet], cmd: Command)(storage: Storage) extends Node {
 
+  val displayName = "Rule %s (Input - [%s], Output - [%s])".format(name, input.map(_.displayName).mkString(", "), output.map(_.displayName).mkString(", "))
+
   def execute(): Unit = {
-    if (input.exists(i => isChanged(i))) {
-      cmd.execute(input, output)
+    try {
+      if (input.map(i => isChanged(i)).exists(i => i)) {
+        Logger.info(displayName + " requires execution...")
+        cmd.execute(input, output)
+        Logger.info(displayName + " was executed successfully.")
+      } else {
+        Logger.info(displayName + " doesn't require execution. No input DataSets was changed.")
+      }
+
+      storage.commit() // todo(postpone): not suitable for || execution
+    } catch {
+      case e: Throwable => {
+        storage.rollback()
+        Logger.error(displayName + " was executed with error: " + e.getMessage)
+        throw e
+      }
     }
   }
 

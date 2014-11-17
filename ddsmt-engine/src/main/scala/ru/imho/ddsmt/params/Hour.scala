@@ -1,9 +1,8 @@
 package ru.imho.ddsmt.params
 
 import org.quartz.CronExpression
-import java.util.Date
+import java.util.{Calendar, Date}
 import scala.collection.mutable.ArrayBuffer
-import org.joda.time.DateTime
 import ru.imho.ddsmt.Base._
 
 /**
@@ -12,9 +11,10 @@ import ru.imho.ddsmt.Base._
 case class Hour(year: Int, month: Int, day: Int, hour: Int, prev: Option[Hour]) extends Param {
 
   override def applyToString(str: String, paramName: String): String = {
-    // todo(postpone): implement something better
+    // todo(postpone): rework parsing
+
     if(str.contains("${"+ paramName +".prev") && prev.isEmpty) {
-      throw new RuntimeException // todo
+      throw new RuntimeException("Cannot apply %s to %s".format(this, str))
     }
 
     val r = str.replace("${"+ paramName +"}", toString)
@@ -50,11 +50,12 @@ object Hour {
     val cex = new CronExpression(cronExpression)
     val hours = ArrayBuffer[Hour]()
     var date = cex.getNextValidTimeAfter(new Date(0))
-    var prevHour: Option[Hour] = Some(new Hour(0, 0, 0, 0, None)) // None todo
+    var prevHour: Option[Hour] = None
 
     while (date != null) {
-      val dt = new DateTime(date.getTime)
-      val hour = new Hour(dt.getYear, dt.getMonthOfYear, dt.getDayOfMonth, dt.getHourOfDay, prevHour)
+      val c = Calendar.getInstance()
+      c.setTime(date)
+      val hour = new Hour(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH), c.get(Calendar.HOUR_OF_DAY), prevHour)
       hours += hour
       prevHour = Some(hour)
       date = cex.getNextValidTimeAfter(date)

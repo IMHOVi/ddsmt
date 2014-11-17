@@ -59,4 +59,6 @@ class DirectoryDs(path: String, dsc: DataSetConfig) extends DataSet {
       }
     }
   }
+
+  def displayName: String = "DIR(" + path + ")"
 }

@@ -52,12 +52,16 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
     rules.foreach(ruleConf => {
       if (ruleConf.param.isDefined && ruleConf.param.get.paramPolicy == ParamPolicy.forEach) {
         val paramName = ruleConf.param.get.paramName
-        params(paramName).foreach(param => {
-          val in = ruleConf.input.map(_.createDataSetInstance(param, paramName))
-          val out = ruleConf.output.map(_.createDataSetInstance(param, paramName))
-          val rule = Rule(ruleConf.name, in, out, ruleConf.cmd.createCommand(param, paramName))(storage)
-          addRule(in, out, rule)
-        })
+        val exceptFor = ruleConf.param.get.exceptFor
+
+        params(paramName)
+          .filter(p => exceptFor.isEmpty || !params(exceptFor.get).exists(_ == p))
+          .foreach(param => {
+            val in = ruleConf.input.map(_.createDataSetInstance(param, paramName))
+            val out = ruleConf.output.map(_.createDataSetInstance(param, paramName))
+            val rule = Rule(ruleConf.name, in, out, ruleConf.cmd.createCommand(param, paramName))(storage)
+            addRule(in, out, rule)
+          })
       }
       else if (ruleConf.param.isEmpty) {
         val in = ruleConf.input.map(_.createDataSetInstance())

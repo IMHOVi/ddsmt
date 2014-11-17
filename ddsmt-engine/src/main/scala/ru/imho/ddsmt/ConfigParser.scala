@@ -31,7 +31,8 @@ object ConfigParser {
 
     val rules = (config \ "rules" \ "rule").map(rule => {
       val name = (rule \ "@name").text
-      val param = Some(ParamDesc((rule \ "@paramName").text, ParamPolicy.withName((rule \ "@paramPolicy").text)))
+      val exceptFor = if ((rule \ "@exceptFor").isEmpty) None else Some((rule \ "@exceptFor").text)
+      val param = Some(ParamDesc((rule \ "@paramName").text, ParamPolicy.withName((rule \ "@paramPolicy").text), exceptFor))
 
       val input = (rule \ "input" \ "_").map(i => dataSetFabric(i.label)(i))
       if (input.isEmpty) throw new RuntimeException("In Rule must be at least one Input")
@@ -40,7 +41,7 @@ object ConfigParser {
       if (output.isEmpty) throw new RuntimeException("In Rule must be at least one Output")
 
       val command = (rule \ "command" \ "_").map(c => commandFabric(c.label)(c))
-      val cmd = if (command.size == 1) command.head else throw new RuntimeException("In Rule must be only one Command")
+      val cmd = if (command.size == 1) command.head else throw new RuntimeException("In Rule must be one Command")
 
       new RuleConfig(name, param, input, output, cmd)
     })

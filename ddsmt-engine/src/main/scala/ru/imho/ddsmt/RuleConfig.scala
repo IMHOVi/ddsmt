@@ -7,7 +7,7 @@ import ru.imho.ddsmt.Base._
  */
 class RuleConfig(val name: String, val param: Option[ParamDesc], val input: Iterable[DataSetConfig], val output: Iterable[DataSetConfig], val cmd: CommandConfig)
 
-case class ParamDesc(paramName: String, paramPolicy: ParamPolicy.Value)
+case class ParamDesc(paramName: String, paramPolicy: ParamPolicy.Value, exceptFor: Option[String])
 
 object ParamPolicy extends Enumeration {
   val forEach = Value(0, "forEach")

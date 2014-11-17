@@ -13,4 +13,6 @@ class GenericDs(val id: String, dsc: DataSetConfig) extends DataSet {
   override def checksum: Option[String] = None
 
   override def timestamp: Option[Timestamp] = None
+
+  def displayName: String = "DS(" + id + ")"
 }
