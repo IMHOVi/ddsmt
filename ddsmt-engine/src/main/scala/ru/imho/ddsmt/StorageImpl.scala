@@ -9,7 +9,7 @@ import java.sql.Timestamp
  * Created by skotlov on 11/14/14.
  */
 class StorageImpl(fileName: String) extends Storage with Closeable {
-  // todo(postpone): 1) cleanup storage 2) move to h2
+  // todo(postpone): 1) cleanup storage 2) move to h2 (need mult sim tr, cleanup field)
 
   val recordManager = RecordManagerFactory.createRecordManager(fileName)
   val lastKnownChecksums = recordManager.hashMap[String, Option[String]]("lastKnownChecksums")
