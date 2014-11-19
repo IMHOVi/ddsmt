@@ -12,7 +12,7 @@ import ru.imho.ddsmt.Base._
  */
 class DirectoryDs(path: String, dsc: DataSetConfig) extends DataSet {
 
-  def id = path
+  def id = "DIR(" + path + ")"
 
   def dataSetConfig: DataSetConfig = dsc
 
@@ -60,5 +60,5 @@ class DirectoryDs(path: String, dsc: DataSetConfig) extends DataSet {
     }
   }
 
-  def displayName: String = "DIR(" + path + ")"
+  def displayName: String = id
 }

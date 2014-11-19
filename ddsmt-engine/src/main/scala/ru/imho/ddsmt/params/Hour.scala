@@ -12,23 +12,28 @@ case class Hour(year: Int, month: Int, day: Int, hour: Int, prev: Option[Hour]) 
 
   override def applyToString(str: String, paramName: String): String = {
     // todo(postpone): rework parsing
+    if (!str.contains("${")) {
+      return str
+    }
 
     if(str.contains("${"+ paramName +".prev") && prev.isEmpty) {
       throw new RuntimeException("Cannot apply %s to %s".format(this, str))
     }
 
+    def leftPad(s: String) = if (s.length == 1) "0" + s else s // todo(postpone): it must be configured
+
     val r = str.replace("${"+ paramName +"}", toString)
       .replace("${"+ paramName +".year}", year.toString)
-      .replace("${"+ paramName +".month}", month.toString)
-      .replace("${"+ paramName +".day}", day.toString)
-      .replace("${"+ paramName +".hour}", hour.toString)
+      .replace("${"+ paramName +".month}", leftPad(month.toString))
+      .replace("${"+ paramName +".day}", leftPad(day.toString))
+      .replace("${"+ paramName +".hour}", leftPad(hour.toString))
 
     val r2 = if (r.contains("${"+ paramName +".prev")) {
       r.replace("${"+ paramName +".prev}", prev.get.toString)
         .replace("${"+ paramName +".prev.year}", prev.get.year.toString)
-        .replace("${"+ paramName +".prev.month}", prev.get.month.toString)
-        .replace("${"+ paramName +".prev.day}", prev.get.day.toString)
-        .replace("${"+ paramName +".prev.hour}", prev.get.hour.toString)
+        .replace("${"+ paramName +".prev.month}", leftPad(prev.get.month.toString))
+        .replace("${"+ paramName +".prev.day}", leftPad(prev.get.day.toString))
+        .replace("${"+ paramName +".prev.hour}", leftPad(prev.get.hour.toString))
     } else {
       r
     }

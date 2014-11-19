@@ -2,23 +2,39 @@ package ru.imho.ddsmt.ds
 
 import org.apache.commons.net.ftp.{FTPReply, FTPClient, FTPFile}
 import java.io.IOException
+import ru.imho.ddsmt.Base._
+import java.sql.Timestamp
 
 /**
  * Created by skotlov on 11/18/14.
  */
-class FtpDs {
+class FtpDs(hostname: String, username: Option[String], password: Option[String], path: String, fileNameRegex: Option[String], dsc: DataSetConfig) extends DataSet {
 
-  def traverseAllFtpFiles(serverAddress: String, username: Option[String], password: Option[String], path: String, fileNameRegex: Option[String], h: FTPFile => Unit): Unit = {
+  override def id: String = "Ftp(hostname: %s, path: %s, files: %s)".format(hostname, path, fileNameRegex.getOrElse("all"))
+
+  override def dataSetConfig: DataSetConfig = dsc
+
+  override def checksum: Option[String] = throw new UnsupportedOperationException("FtpDs doesn't support checksum")
+
+  override def timestamp: Option[Timestamp] = {
+    var max = 0L
+    traverseAllFtpFiles(hostname, username, password, path, fileNameRegex, f => { max = Math.max(max, f.getTimestamp.getTimeInMillis) })
+    if (max == 0L) None else Some(new Timestamp(max))
+  }
+
+  override def displayName: String = id
+
+  private def traverseAllFtpFiles(hostname: String, username: Option[String], password: Option[String], path: String, fileNameRegex: Option[String], h: FTPFile => Unit): Unit = {
     val ftp = new FTPClient()
     try {
-      ftp.connect(serverAddress)
+      ftp.connect(hostname)
 
       if(!ftp.login(username.getOrElse(""), password.getOrElse(""))) {
-          throw new RuntimeException("Cannot login to " + serverAddress)
+        throw new RuntimeException("Cannot login to " + hostname)
       }
 
       if (!FTPReply.isPositiveCompletion(ftp.getReplyCode)) {
-        throw new RuntimeException("Cannot successfully connect to " + serverAddress)
+        throw new RuntimeException("Cannot successfully connect to " + hostname)
       }
 
       ftp.enterLocalPassiveMode()
@@ -27,13 +43,13 @@ class FtpDs {
       try {
         ftp.logout()
       } catch {
-        case e: IOException => // todo log
+        case e: IOException => // todo(postpone): log
       }
 
       try {
         ftp.disconnect()
       } catch {
-        case e: IOException => // todo log
+        case e: IOException => // todo(postpone): log
       }
     }
   }

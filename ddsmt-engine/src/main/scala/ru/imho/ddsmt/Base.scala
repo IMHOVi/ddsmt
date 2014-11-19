@@ -71,6 +71,11 @@ object Base {
   trait Param {
 
     def applyToString(str: String, paramName: String): String
+
+    def applyToString(str: Option[String], paramName: String): Option[String] = str match {
+      case None => None
+      case Some(s) => Some(applyToString(s, paramName))
+    }
   }
 
   // Storage
