@@ -1,6 +1,8 @@
 package ru.imho.ddsmt
 
 import ru.imho.ddsmt.Base._
+import scala.collection.mutable.ArrayBuffer
+import java.sql.Timestamp
 
 /**
   * Created by skotlov on 11/13/14.
@@ -9,9 +11,20 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
 
   val displayName = "Rule %s (Input - [%s], Output - [%s])".format(name, input.map(_.displayName).mkString(", "), output.map(_.displayName).mkString(", "))
 
+  @volatile
+  var executed = false
+
   def execute(): Unit = {
+    if (executed)
+      throw new RuntimeException(displayName + " already was executed")
+    else
+      executed = true
+
     try {
-      if (input.map(i => isChanged(i)).exists(i => i)) {
+      val changedTs = ArrayBuffer[(String, Option[Timestamp])]()
+      val changedCs = ArrayBuffer[(String, Option[String])]()
+
+      if (input.map(i => isChanged(i, changedTs, changedCs)).exists(i => i)) {
         Logger.info(displayName + " requires execution...")
         cmd.execute(input, output)
         Logger.info(displayName + " was executed successfully.")
@@ -19,17 +32,17 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
         Logger.info(displayName + " doesn't require execution. No input DataSets was changed.")
       }
 
-      storage.commit() // todo(postpone): not suitable for || execution
+      changedTs.foreach(ts => storage.setLastKnownTimestamp(ts._1, name)(ts._2))
+      changedCs.foreach(cs => storage.setLastKnownChecksum(cs._1, name)(cs._2))
     } catch {
       case e: Throwable => {
-        storage.rollback()
         Logger.error(displayName + " was executed with error: " + e.getMessage)
         throw e
       }
     }
   }
 
-  private def isChanged(input: DataSet): Boolean = {
+  private def isChanged(input: DataSet, changedTs: ArrayBuffer[(String, Option[Timestamp])], changedCs: ArrayBuffer[(String, Option[String])]): Boolean = {
     val cs = if (input.dataSetConfig.checkStrategy.isDefined)
       input.dataSetConfig.checkStrategy.get
     else
@@ -39,7 +52,7 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
       val lastKn = storage.getLastKnownTimestamp(input.id, name)
       val inTs = input.timestamp
       if (lastKn != inTs) {
-        storage.setLastKnownTimestamp(input.id, name)(inTs)
+        changedTs += ((input.id, inTs))
       }
 
       if (inTs.isDefined && lastKn.isDefined)
@@ -52,7 +65,7 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
       val lastKn = storage.getLastKnownChecksum(input.id, name)
       val inCs = input.checksum
       if (lastKn != inCs) {
-        storage.setLastKnownChecksum(input.id, name)(inCs)
+        changedCs += ((input.id, inCs))
       }
 
       if (inCs.isDefined && lastKn.isDefined)

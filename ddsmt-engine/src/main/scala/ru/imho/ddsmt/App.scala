@@ -19,33 +19,40 @@ object App {
     })
 
     val gs = new GraphService(config.params, config.rules, storage)
-    gs.run()
+    arg.concurrencyDegree match {
+      case None => gs.run()
+      case Some(d) => gs.runInParallel(d)
+    }
   }
 
   private def parseArgs(args: Array[String]): Args = {
     var configFile = "ddsmtConfig.xml"
     var storageLocation = "/ddsmt-storage/storage"
+    var concurrencyDegree: Option[Int] = None
 
     @tailrec
-    def p(a: List[String]): Unit = a match {
+    def parse(a: List[String]): Unit = a match {
       case "-h" :: r =>
-        println("-h | [-c <configFile>] [-s <storageLocation>]")
+        println("-h | [-c <configFile>] [-s <storageLocation>] [-p <concurrencyDegree>]")
         System.exit(1)
       case "-c" :: c :: r =>
         configFile = c
-        p(r)
+        parse(r)
       case "-s" :: s :: r =>
         storageLocation = s
-        p(r)
+        parse(r)
+      case "-p" :: p :: r =>
+        concurrencyDegree = Some(p.toInt)
+        parse(r)
       case Nil =>
         Unit
       case _ =>
         sys.error("Invalid command line")
     }
 
-    p(args.toList)
-    new Args(configFile, storageLocation)
+    parse(args.toList)
+    new Args(configFile, storageLocation, concurrencyDegree)
   }
 
-  class Args (val configFile: String, val storageLocation: String)
+  class Args (val configFile: String, val storageLocation: String, val concurrencyDegree: Option[Int])
 }

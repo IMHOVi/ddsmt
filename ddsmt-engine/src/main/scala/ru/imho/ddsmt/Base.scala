@@ -89,9 +89,5 @@ object Base {
     def getLastKnownTimestamp(dataSetId: String, ruleName: String): Option[Timestamp]
 
     def setLastKnownTimestamp(dataSetId: String, ruleName: String)(timestamp: Option[Timestamp])
-
-    def commit() // todo(postpone): remove after switching to separate transaction
-
-    def rollback() // todo(postpone): remove after switching to separate transaction
   }
 }

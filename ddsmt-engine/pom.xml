@@ -70,6 +70,13 @@
 			<version>${graph.version}</version>
 		</dependency>
 
+        <!-- Akka -->
+        <dependency>
+        	<groupId>com.typesafe.akka</groupId>
+        	<artifactId>akka-actor_2.10</artifactId>
+        	<version>2.3.7</version>
+        </dependency>
+
         <!-- Cron parser -->
         <dependency>
             <groupId>org.quartz-scheduler</groupId>
