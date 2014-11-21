@@ -26,7 +26,7 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
 
       if (input.map(i => isChanged(i, changedTs, changedCs)).exists(i => i)) {
         Logger.info(displayName + " requires execution...")
-        cmd.execute(input, output)
+        cmd.execute(this)
         Logger.info(displayName + " was executed successfully.")
       } else {
         Logger.info(displayName + " doesn't require execution. No input DataSets was changed.")

@@ -1,6 +1,5 @@
 package ru.imho.ddsmt
 
-import scala.annotation.tailrec
 import scalax.collection.mutable.Graph
 import ru.imho.ddsmt.Base._
 import scalax.collection.GraphEdge.DiEdge
@@ -11,45 +10,18 @@ import akka.routing.RoundRobinRouter
 /**
  * Created by skotlov on 11/13/14.
  */
-class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig], storage: Storage) {
+class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig], storage: Storage, actorSystem: ActorSystem) {
 
   val graph = buildGraph(params, rules)
 
-  def run() = {
-    executeRules(Set())
-  }
-
-  @tailrec
-  private def executeRules(executedRules: Set[Rule]) {
-    val ruleToExec = graph.nodes.filter(n => n.value.isInstanceOf[Rule] && !isRuleExecuted(n, executedRules) && isRuleReadyToExecute(n, executedRules))
-      .map(_.value.asInstanceOf[Rule])
-
-    if (!ruleToExec.isEmpty) {
-      ruleToExec.foreach(_.execute())
-      executeRules(executedRules ++ ruleToExec)
-    }
-  }
-
-  private def isRuleExecuted(rule: graph.NodeT, executedRules: scala.collection.Set[Rule]) = executedRules.contains(rule.value.asInstanceOf[Rule])
-
-  private def isDsReady(ds: graph.NodeT, executedRules: scala.collection.Set[Rule]) = {
-    ds.diPredecessors.isEmpty ||
-      ds.diPredecessors.forall(rule => isRuleExecuted(rule, executedRules))
-  }
-
-  private def isRuleReadyToExecute(rule: graph.NodeT, executedRules: scala.collection.Set[Rule]) = {
-    rule.diPredecessors.forall(ds => isDsReady(ds, executedRules))
-  }
-
-  def runInParallel(degree: Int) = {
-    val system = ActorSystem("ddsmtSystem")
-    val dispatcher = system.actorOf(Props(new Dispatcher(degree)), "dispatcher")
+  def run(concurrencyDegree: Int) = {
+    val dispatcher = actorSystem.actorOf(Props(new Dispatcher(concurrencyDegree)), "dispatcher")
     dispatcher ! "start"
   }
 
-  class Dispatcher(degree: Int) extends Actor {
+  class Dispatcher(concurrencyDegree: Int) extends Actor {
 
-    val workers = context.system.actorOf(Props[Worker].withRouter(RoundRobinRouter(nrOfInstances = degree)))
+    val workers = context.system.actorOf(Props[Worker].withRouter(RoundRobinRouter(nrOfInstances = concurrencyDegree)))
 
     val executedRules = mutable.Set[Rule]()
     val executingRules = mutable.Set[Rule]()
@@ -69,7 +41,7 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
     }
 
     private def process() {
-      val ruleToExec = graph.nodes.filter(n => n.value.isInstanceOf[Rule] && !isRuleExecuting(n) && isRuleReadyToExecute(n, executedRules))
+      val ruleToExec = graph.nodes.filter(n => n.value.isInstanceOf[Rule] && !isRuleExecuting(n) && isRuleReadyToExecute(n))
         .map(_.value.asInstanceOf[Rule])
 
       if (!ruleToExec.isEmpty) {
@@ -87,6 +59,17 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
     }
 
     private def isRuleExecuting(rule: graph.NodeT) = executingRules.contains(rule.value.asInstanceOf[Rule])
+
+    private def isRuleExecuted(rule: graph.NodeT) = executedRules.contains(rule.value.asInstanceOf[Rule])
+
+    private def isDsReady(ds: graph.NodeT) = {
+      ds.diPredecessors.isEmpty ||
+        ds.diPredecessors.forall(rule => isRuleExecuted(rule))
+    }
+
+    private def isRuleReadyToExecute(rule: graph.NodeT) = {
+      rule.diPredecessors.forall(ds => isDsReady(ds))
+    }
   }
 
   private def buildGraph(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig]): Graph[Node, DiEdge] = {

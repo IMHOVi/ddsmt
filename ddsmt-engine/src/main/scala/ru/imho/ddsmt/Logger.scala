@@ -14,6 +14,10 @@ object Logger {
     System.out.println(time + ": " + s)
   }
 
+  def warning(s: String) {
+    System.out.println(time + ": " + s)
+  }
+
   def error(s: String) {
     System.err.println(time + ": " + s)
   }

@@ -4,6 +4,7 @@ import org.apache.commons.net.ftp.{FTPReply, FTPClient, FTPFile}
 import java.io.IOException
 import ru.imho.ddsmt.Base._
 import java.sql.Timestamp
+import ru.imho.ddsmt.Logger
 
 /**
  * Created by skotlov on 11/18/14.
@@ -43,13 +44,13 @@ class FtpDs(hostname: String, username: Option[String], password: Option[String]
       try {
         ftp.logout()
       } catch {
-        case e: IOException => // todo(postpone): log
+        case e: IOException => Logger.error("Cannot logout from ftp - %s. Error - %s".format(displayName, e))
       }
 
       try {
         ftp.disconnect()
       } catch {
-        case e: IOException => // todo(postpone): log
+        case e: IOException => Logger.error("Cannot disconnect from ftp - %s. Error - %s".format(displayName, e))
       }
     }
   }

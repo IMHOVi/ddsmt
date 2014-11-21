@@ -1,6 +1,7 @@
 package ru.imho.ddsmt
 
 import java.sql.Timestamp
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Created by skotlov on 11/14/14.
@@ -63,8 +64,13 @@ object Base {
 
   trait Command {
 
-    def execute(input: Iterable[DataSet], output: Iterable[DataSet])
+    def execute(rule: Rule)
   }
+
+  class CommandPolicy(
+    val expectedExecutionTime: Option[FiniteDuration],
+    val maxExecutionTime: Option[FiniteDuration]
+  )
 
   // Param
 

@@ -4,12 +4,14 @@ import scala.xml.{Node, XML}
 import ru.imho.ddsmt.params.Hour
 import ru.imho.ddsmt.ds.{FtpDsConfig, DirectoryDsConfig, GenericDsConfig}
 import ru.imho.ddsmt.commands.ExtCommandConfig
-import ru.imho.ddsmt.Base.{CommandConfig, CheckStrategies, DataSetConfig, Param}
+import ru.imho.ddsmt.Base._
+import scala.concurrent.duration.Duration
+import java.util.concurrent.TimeUnit
 
 /**
  * Created by skotlov on 11/14/14.
  */
-object ConfigParser {
+class ConfigParser(scheduler: Scheduler) {
 
   val paramFabric: Map[String, String => Iterable[Param]] = Map("Hour" -> (v => Hour(v)))
 
@@ -20,7 +22,7 @@ object ConfigParser {
   )
 
   val commandFabric: Map[String, Node => CommandConfig] = Map(
-    "external" -> (n => new ExtCommandConfig((n \ "part").map(_.text)))
+    "external" -> (n => new ExtCommandConfig((n \ "part").map(_.text), parseCommandPolicy(n), scheduler))
   )
 
   def parse(configFile: String): Config = {
@@ -54,6 +56,18 @@ object ConfigParser {
     if ((n \ ("@" + name)).isEmpty) None else Some((n \ ("@" + name)).text)
 
   private def checkStrategy(n: Node) = if ((n \ "@checkStrategy").isEmpty) None else Some(CheckStrategies.withName((n \ "@checkStrategy").text))
+
+  private def parseCommandPolicy(n: Node): CommandPolicy = {
+    val expectedExecutionTime = attrOpt(n, "expectedExecutionTimeSec") match {
+      case None => None
+      case Some(t) => Some(Duration(t.toLong, TimeUnit.SECONDS))
+    }
+    val maxExecutionTime = attrOpt(n, "maxExecutionTimeSec") match {
+      case None => None
+      case Some(t) => Some(Duration(t.toLong, TimeUnit.SECONDS))
+    }
+    new CommandPolicy(expectedExecutionTime, maxExecutionTime)
+  }
 }
 
 class Config(val params: Map[String, Iterable[Param]], val rules: Iterable[RuleConfig])

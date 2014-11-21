@@ -1,6 +1,7 @@
 package ru.imho.ddsmt
 
 import scala.annotation.tailrec
+import akka.actor.ActorSystem
 
 /**
  * Created by skotlov on 10.11.2014.
@@ -9,7 +10,9 @@ object App {
 
   def main(args: Array[String]): Unit = {
     val arg = parseArgs(args)
-    val config = ConfigParser.parse(arg.configFile)
+    val actorSystem = ActorSystem("ddsmtSystem")
+    val scheduler = new Scheduler(actorSystem)
+    val config = new ConfigParser(scheduler).parse(arg.configFile)
 
     val storage = new StorageImpl(arg.storageLocation)
     Runtime.getRuntime.addShutdownHook(new Thread() {
@@ -18,17 +21,14 @@ object App {
       }
     })
 
-    val gs = new GraphService(config.params, config.rules, storage)
-    arg.concurrencyDegree match {
-      case None => gs.run()
-      case Some(d) => gs.runInParallel(d)
-    }
+    val gs = new GraphService(config.params, config.rules, storage, actorSystem)
+    gs.run(arg.concurrencyDegree)
   }
 
   private def parseArgs(args: Array[String]): Args = {
     var configFile = "ddsmtConfig.xml"
     var storageLocation = "/ddsmt-storage/storage"
-    var concurrencyDegree: Option[Int] = None
+    var concurrencyDegree = 1
 
     @tailrec
     def parse(a: List[String]): Unit = a match {
@@ -42,7 +42,7 @@ object App {
         storageLocation = s
         parse(r)
       case "-p" :: p :: r =>
-        concurrencyDegree = Some(p.toInt)
+        concurrencyDegree = p.toInt
         parse(r)
       case Nil =>
         Unit
@@ -54,5 +54,5 @@ object App {
     new Args(configFile, storageLocation, concurrencyDegree)
   }
 
-  class Args (val configFile: String, val storageLocation: String, val concurrencyDegree: Option[Int])
+  class Args (val configFile: String, val storageLocation: String, val concurrencyDegree: Int)
 }
