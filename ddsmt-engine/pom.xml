@@ -95,6 +95,11 @@
             <artifactId>commons-net</artifactId>
             <version>3.3</version>
         </dependency>
+        <dependency>
+        	<groupId>org.fusesource.jansi</groupId>
+        	<artifactId>jansi</artifactId>
+        	<version>1.11</version>
+        </dependency>
 
         <!-- Storage -->
         <dependency>

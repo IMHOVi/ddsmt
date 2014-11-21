@@ -25,7 +25,8 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
       val changedCs = ArrayBuffer[(String, Option[String])]()
 
       if (input.map(i => isChanged(i, changedTs, changedCs)).exists(i => i)) {
-        Logger.info(displayName + " requires execution...")
+        val chDs = (changedTs.map(_._1) ++ changedCs.map(_._1)).distinct.mkString(", ")
+        Logger.info(displayName + " requires execution..." + (if (chDs.isEmpty) "" else " Changed DataSets: " + chDs))
 
         val expectedTimeWarning = cmd.policy.expectedExecutionTime match {
           case None => None
@@ -64,6 +65,10 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
     def requiredByTimestamp = {
       val lastKn = storage.getLastKnownTimestamp(input.id, name)
       val inTs = input.timestamp
+      if (inTs.isEmpty) {
+        Logger.warning("Could not define Timestamp for DataSet: " + input.displayName)
+      }
+
       if (lastKn != inTs) {
         changedTs += ((input.id, inTs))
       }
@@ -77,6 +82,10 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
     def requiredByChecksum = {
       val lastKn = storage.getLastKnownChecksum(input.id, name)
       val inCs = input.checksum
+      if (inCs.isEmpty) {
+        Logger.warning("Could not define Checksum for DataSet: " + input.displayName)
+      }
+
       if (lastKn != inCs) {
         changedCs += ((input.id, inCs))
       }

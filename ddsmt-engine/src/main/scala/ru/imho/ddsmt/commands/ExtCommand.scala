@@ -21,12 +21,6 @@ class ExtCommand(commands: Iterable[String], val policy: CommandPolicy) extends 
       })
     }
 
-//    BufferedReader in = new BufferedReader(new InputStreamReader(p.getInputStream())); todo
-//    String s = "";
-//    while((s = in.readLine()) != null){
-//        System.out.println(s);
-//    }
-
     val r = p.waitFor()
 
     if (destroyProcess.isDefined && !destroyProcess.get.isCancelled)
