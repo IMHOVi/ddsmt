@@ -10,8 +10,9 @@ import akka.routing.RoundRobinRouter
 /**
  * Created by skotlov on 11/13/14.
  */
-class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig], storage: Storage, actorSystem: ActorSystem) {
+class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig], storage: Storage) {
 
+  private val actorSystem = ActorSystem("ddsmtSystem")
   val graph = buildGraph(params, rules)
 
   def run(concurrencyDegree: Int) = {
@@ -74,6 +75,7 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
 
   private def buildGraph(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig]): Graph[Node, DiEdge] = {
     val graph = Graph[Node, DiEdge]()
+    val scheduler = new Scheduler(actorSystem)
 
     def addRule(in: Iterable[DataSet], out: Iterable[DataSet], rule: Rule) {
       in.foreach(i => graph += DiEdge(i, rule))
@@ -90,14 +92,14 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
           .foreach(param => {
             val in = ruleConf.input.map(_.createDataSetInstance(param, paramName))
             val out = ruleConf.output.map(_.createDataSetInstance(param, paramName))
-            val rule = Rule(ruleConf.name, in, out, ruleConf.cmd.createCommand(param, paramName))(storage)
+            val rule = Rule(ruleConf.name, in, out, ruleConf.cmd.createCommand(param, paramName))(storage, scheduler)
             addRule(in, out, rule)
           })
       }
       else if (ruleConf.param.isEmpty) {
         val in = ruleConf.input.map(_.createDataSetInstance())
         val out = ruleConf.output.map(_.createDataSetInstance())
-        val rule = Rule(ruleConf.name, in, out, ruleConf.cmd.createCommand())(storage)
+        val rule = Rule(ruleConf.name, in, out, ruleConf.cmd.createCommand())(storage, scheduler)
         addRule(in, out, rule)
       }
       else {

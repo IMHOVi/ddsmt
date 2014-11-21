@@ -65,6 +65,8 @@ object Base {
   trait Command {
 
     def execute(rule: Rule)
+
+    def policy: CommandPolicy
   }
 
   class CommandPolicy(

@@ -1,7 +1,6 @@
 package ru.imho.ddsmt
 
 import scala.annotation.tailrec
-import akka.actor.ActorSystem
 
 /**
  * Created by skotlov on 10.11.2014.
@@ -10,9 +9,7 @@ object App {
 
   def main(args: Array[String]): Unit = {
     val arg = parseArgs(args)
-    val actorSystem = ActorSystem("ddsmtSystem")
-    val scheduler = new Scheduler(actorSystem)
-    val config = new ConfigParser(scheduler).parse(arg.configFile)
+    val config = ConfigParser.parse(arg.configFile)
 
     val storage = new StorageImpl(arg.storageLocation)
     Runtime.getRuntime.addShutdownHook(new Thread() {
@@ -21,7 +18,7 @@ object App {
       }
     })
 
-    val gs = new GraphService(config.params, config.rules, storage, actorSystem)
+    val gs = new GraphService(config.params, config.rules, storage)
     gs.run(arg.concurrencyDegree)
   }
 

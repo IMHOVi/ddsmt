@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Created by skotlov on 11/14/14.
  */
-class ConfigParser(scheduler: Scheduler) {
+object ConfigParser {
 
   val paramFabric: Map[String, String => Iterable[Param]] = Map("Hour" -> (v => Hour(v)))
 
@@ -22,7 +22,7 @@ class ConfigParser(scheduler: Scheduler) {
   )
 
   val commandFabric: Map[String, Node => CommandConfig] = Map(
-    "external" -> (n => new ExtCommandConfig((n \ "part").map(_.text), parseCommandPolicy(n), scheduler))
+    "external" -> (n => new ExtCommandConfig((n \ "part").map(_.text), parseCommandPolicy(n)))
   )
 
   def parse(configFile: String): Config = {

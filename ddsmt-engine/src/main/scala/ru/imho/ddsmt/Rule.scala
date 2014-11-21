@@ -7,7 +7,7 @@ import java.sql.Timestamp
 /**
   * Created by skotlov on 11/13/14.
   */
-case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet], cmd: Command)(storage: Storage) extends Node {
+case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet], cmd: Command)(storage: Storage, val scheduler: Scheduler) extends Node {
 
   val displayName = "Rule %s (Input - [%s], Output - [%s])".format(name, input.map(_.displayName).mkString(", "), output.map(_.displayName).mkString(", "))
 
@@ -26,7 +26,20 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
 
       if (input.map(i => isChanged(i, changedTs, changedCs)).exists(i => i)) {
         Logger.info(displayName + " requires execution...")
-        cmd.execute(this)
+
+        val expectedTimeWarning = cmd.policy.expectedExecutionTime match {
+          case None => None
+          case Some(d) => Some(scheduler.scheduleOnce(d){
+            Logger.warning(displayName + " exceeded the expected execution time=(" + d + ")")
+          })
+        }
+        try {
+          cmd.execute(this)
+        } finally {
+          if (expectedTimeWarning.isDefined && !expectedTimeWarning.get.isCancelled)
+            expectedTimeWarning.get.cancel()
+        }
+
         Logger.info(displayName + " was executed successfully.")
       } else {
         Logger.info(displayName + " doesn't require execution. No input DataSets was changed.")
