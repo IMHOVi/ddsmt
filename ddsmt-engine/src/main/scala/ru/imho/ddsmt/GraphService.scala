@@ -20,6 +20,24 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
     dispatcher ! "start"
   }
 
+  def toDot: String = {
+    import scalax.collection.io.dot._
+    val root = DotRootGraph(directed = true, id = Some("ddsmt_graph"))
+
+    def getName(n: scalax.collection.Graph[Node, DiEdge]#NodeT) = n.value match {
+      case r: Rule => r.name + "#" + r.hashCode()
+      case ds: DataSet => ds.displayName
+    }
+
+    def edgeTransformer(innerEdge: scalax.collection.Graph[Node, DiEdge]#EdgeT): Option[(DotGraph,DotEdgeStmt)] = {
+      val edge = innerEdge.edge
+      Some(root, DotEdgeStmt(getName(edge.from), getName(edge.to), Nil))
+    }
+
+    actorSystem.shutdown()
+    graph.toDot(root, edgeTransformer)
+  }
+
   class Dispatcher(concurrencyDegree: Int) extends Actor {
 
     val workers = context.system.actorOf(Props[Worker].withRouter(RoundRobinRouter(nrOfInstances = concurrencyDegree)))

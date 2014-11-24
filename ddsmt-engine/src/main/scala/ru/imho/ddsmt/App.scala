@@ -1,6 +1,7 @@
 package ru.imho.ddsmt
 
 import scala.annotation.tailrec
+import java.io.{File, PrintWriter}
 
 /**
  * Created by skotlov on 10.11.2014.
@@ -19,18 +20,23 @@ object App {
     })
 
     val gs = new GraphService(config.params, config.rules, storage)
-    gs.run(arg.concurrencyDegree)
+
+    if (arg.dotExportFileName.isDefined)
+      writeToFile(arg.dotExportFileName.get, gs.toDot)
+    else
+      gs.run(arg.concurrencyDegree)
   }
 
   private def parseArgs(args: Array[String]): Args = {
     var configFile = "ddsmtConfig.xml"
     var storageLocation = "/ddsmt-storage/storage"
     var concurrencyDegree = 1
+    var dotExportFileName: Option[String] = None
 
     @tailrec
     def parse(a: List[String]): Unit = a match {
       case "-h" :: r =>
-        println("-h | [-c <configFile>] [-s <storageLocation>] [-p <concurrencyDegree>]")
+        println("-h | [-c <configFile>] [-s <storageLocation>] [-p <concurrencyDegree>] [-e <dotExportFileName>]")
         System.exit(1)
       case "-c" :: c :: r =>
         configFile = c
@@ -41,6 +47,9 @@ object App {
       case "-p" :: p :: r =>
         concurrencyDegree = p.toInt
         parse(r)
+      case "-e" :: e :: r =>
+        dotExportFileName = Some(e)
+        parse(r)
       case Nil =>
         Unit
       case _ =>
@@ -48,8 +57,14 @@ object App {
     }
 
     parse(args.toList)
-    new Args(configFile, storageLocation, concurrencyDegree)
+    new Args(configFile, storageLocation, concurrencyDegree, dotExportFileName)
   }
 
-  class Args (val configFile: String, val storageLocation: String, val concurrencyDegree: Int)
+  class Args (val configFile: String, val storageLocation: String, val concurrencyDegree: Int, val dotExportFileName: Option[String])
+
+  private def writeToFile(fileName: String, text: String) {
+    Utils.using(new PrintWriter(fileName)) {
+      wr => wr.println(text)
+    }
+  }
 }
