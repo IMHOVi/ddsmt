@@ -1,6 +1,6 @@
 package ru.imho.ddsmt
 
-import org.scalatest.{FlatSpec, FunSuite}
+import org.scalatest.FlatSpec
 import ru.imho.ddsmt.Base._
 import java.sql.Timestamp
 import ru.imho.ddsmt.params.Hour
@@ -14,28 +14,69 @@ import scala.collection.mutable
  */
 class GraphServiceTest extends FlatSpec with MockFactory {
 
-  "GraphService" should "execute all of the commands in the correct order" in {
-    val storage = stub[Storage]
+  val storage = stub[Storage]
+  (storage.getLastKnownChecksum(_, _)) when(*, *) returns Some("checksum")
 
-    val t1 = new TGraphService(storage)
+  "GraphService" should "execute all of the commands in the correct order" in {
+    val t1 = new TGraphService(storage, Set(), true)
     t1.run(1)
-    t1.commands.foreach(c => assert(c._2.isExecuted))
+    t1.checkAllCommandsWasExecuted()
     t1.checkOrderOfExecution()
 
-    val t2 = new TGraphService(storage)
+    val t2 = new TGraphService(storage, Set(), true)
     t2.run(16)
-    t2.commands.foreach(c => assert(c._2.isExecuted))
+    t2.checkAllCommandsWasExecuted()
+    t2.checkOrderOfExecution()
+  }
+
+  it should "not execute commands located after the point where the error occurred" in {
+    import Const._
+    val t2 = new TGraphService(storage, Set((sdToParquet, 1)), true)
+    t2.run(16)
+    t2.checkOrderOfExecution()
+
+    t2.checkCommandWasExecuted(loadLogsFromAdFox, 0)
+    t2.checkCommandWasExecuted(convertXmlToParquet, 0)
+    t2.checkCommandWasExecuted(sdToParquet, 0)
+    t2.checkCommandWasExecuted(createVvAndUnique, 0)
+    t2.checkCommandWasExecuted(loadVvToXodata, 0)
+
+    t2.checkCommandWasExecuted(loadLogsFromAdFox, 1)
+    t2.checkCommandWasExecuted(convertXmlToParquet, 1)
+    t2.checkCommandWasNotExecuted(sdToParquet, 1)
+    t2.checkCommandWasNotExecuted(createVvAndUnique, 1)
+    t2.checkCommandWasNotExecuted(loadVvToXodata, 1)
+
+    t2.checkCommandWasExecuted(loadLogsFromAdFox, 2)
+    t2.checkCommandWasExecuted(convertXmlToParquet, 2)
+    t2.checkCommandWasExecuted(sdToParquet, 2)
+    t2.checkCommandWasNotExecuted(createVvAndUnique, 2)
+    t2.checkCommandWasNotExecuted(loadVvToXodata, 2)
+  }
+
+  it should "not execute any commands if data sources are not changed" in {
+    val t1 = new TGraphService(storage, Set(), false)
+    t1.run(1)
+    t1.checkNoCommandsWasExecuted()
+    t1.checkOrderOfExecution()
+
+    val t2 = new TGraphService(storage, Set(), false)
+    t2.run(16)
+    t2.checkNoCommandsWasExecuted()
     t2.checkOrderOfExecution()
   }
 }
 
-class TGraphService(storage: Storage) {
-
+object Const {
   val loadLogsFromAdFox = "loadLogsFromAdFox"
   val convertXmlToParquet = "convertXmlToParquet"
   val sdToParquet = "sdToParquet"
   val createVvAndUnique = "createVvAndUnique"
   val loadVvToXodata = "loadVvToXodata"
+}
+
+class TGraphService(storage: Storage, cmdToFail: Set[(String, Int)], isDsChanged: Boolean) {
+  import Const._
 
   val readyDs = new {
     private val rds = mutable.Set[String]()
@@ -68,6 +109,22 @@ class TGraphService(storage: Storage) {
     assertExecutedBefore(commands((convertXmlToParquet, 2)), commands((createVvAndUnique, 2)))
     assertExecutedBefore(commands((sdToParquet, 2)), commands((createVvAndUnique, 2)))
     assertExecutedBefore(commands((createVvAndUnique, 2)), commands((loadVvToXodata, 2)))
+  }
+
+  def checkAllCommandsWasExecuted() {
+    commands.foreach(c => assert(c._2.isExecuted))
+  }
+
+  def checkNoCommandsWasExecuted() {
+    commands.foreach(c => assert(!c._2.isExecuted))
+  }
+
+  def checkCommandWasExecuted(name: String, hour: Int) {
+    assert(commands((name, hour)).isExecuted)
+  }
+
+  def checkCommandWasNotExecuted(name: String, hour: Int) {
+    assert(!commands((name, hour)).isExecuted)
   }
 
   private def assertExecutedBefore(before: TestCommand, after: TestCommand) {
@@ -117,7 +174,7 @@ class TGraphService(storage: Storage) {
 
   class TestDs(val id: String, val dataSetConfig: DataSetConfig) extends DataSet {
 
-    override def checksum: Option[String] = None
+    override def checksum: Option[String] = Some(if (isDsChanged) "checksum_2" else "checksum")
 
     override def timestamp: Option[Timestamp] = None
 
@@ -137,7 +194,7 @@ class TGraphService(storage: Storage) {
       ds
     }
 
-    override def checkStrategy: Option[CheckStrategies.Value] = None
+    override def checkStrategy: Option[CheckStrategies.Value] = Some(CheckStrategies.checksum)
   }
 
   case class TestCommand(name: String, hour: Int) extends Command {
@@ -148,10 +205,12 @@ class TGraphService(storage: Storage) {
 
     override def execute(rule: Rule): Unit = {
       startTime = System.currentTimeMillis()
-
       rule.input.foreach(i => assert(readyDs.isReady(i.id)))
-      rule.output.foreach(o => readyDs.setReady(o.id))
 
+      if (cmdToFail.contains((name, hour)))
+        throw new RuntimeException("cmd fail")
+
+      rule.output.foreach(o => readyDs.setReady(o.id))
       endTime = System.currentTimeMillis()
     }
 
