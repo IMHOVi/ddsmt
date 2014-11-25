@@ -6,6 +6,7 @@ import scalax.collection.GraphEdge.DiEdge
 import akka.actor.{Props, Actor, ActorSystem}
 import scala.collection.mutable
 import akka.routing.RoundRobinRouter
+import scala.concurrent.duration.Duration
 
 /**
  * Created by skotlov on 11/13/14.
@@ -13,7 +14,7 @@ import akka.routing.RoundRobinRouter
 class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleConfig], storage: Storage) {
 
   private val actorSystem = ActorSystem("ddsmtSystem")
-  val graph = buildGraph(params, rules)
+  private val graph = buildGraph(params, rules)
 
   def run(concurrencyDegree: Int) = {
     val dispatcher = actorSystem.actorOf(Props(new Dispatcher(concurrencyDegree)), "dispatcher")
@@ -37,6 +38,12 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
     actorSystem.shutdown()
     graph.toDot(root, edgeTransformer)
   }
+
+  def awaitTermination(timeout: Duration): Unit = actorSystem.awaitTermination(timeout)
+
+  def allDataSets = graph.nodes.filter(n => n.value.isInstanceOf[DataSet]).map(_.value.asInstanceOf[DataSet])
+
+  def allRules = graph.nodes.filter(n => n.value.isInstanceOf[Rule]).map(_.value.asInstanceOf[Rule])
 
   class Dispatcher(concurrencyDegree: Int) extends Actor {
 
