@@ -14,10 +14,10 @@ import scala.collection.mutable
  */
 class GraphServiceTest extends FlatSpec with MockFactory {
 
-  val storage = stub[Storage]
-  (storage.getLastKnownChecksum(_, _)) when(*, *) returns Some("checksum")
-
   "GraphService" should "execute all of the commands in the correct order" in {
+    val storage = stub[Storage]
+    storage.getLastKnownChecksum _ when(*, *) returns Some(Const.checksumInStorage)
+
     val t1 = new TGraphService(storage, Set(), true)
     t1.run(1)
     t1.checkAllCommandsWasExecuted()
@@ -31,6 +31,9 @@ class GraphServiceTest extends FlatSpec with MockFactory {
 
   it should "not execute commands located after the point where the error occurred" in {
     import Const._
+    val storage = stub[Storage]
+    storage.getLastKnownChecksum _ when(*, *) returns Some(Const.checksumInStorage)
+
     val t2 = new TGraphService(storage, Set((sdToParquet, 1)), true)
     t2.run(16)
     t2.checkOrderOfExecution()
@@ -55,6 +58,9 @@ class GraphServiceTest extends FlatSpec with MockFactory {
   }
 
   it should "not execute any commands if data sources are not changed" in {
+    val storage = stub[Storage]
+    storage.getLastKnownChecksum _ when(*, *) returns Some(Const.checksumInStorage)
+
     val t1 = new TGraphService(storage, Set(), false)
     t1.run(1)
     t1.checkNoCommandsWasExecuted()
@@ -68,6 +74,8 @@ class GraphServiceTest extends FlatSpec with MockFactory {
 }
 
 object Const {
+  val checksumInStorage = "checksum"
+
   val loadLogsFromAdFox = "loadLogsFromAdFox"
   val convertXmlToParquet = "convertXmlToParquet"
   val sdToParquet = "sdToParquet"
@@ -174,7 +182,7 @@ class TGraphService(storage: Storage, cmdToFail: Set[(String, Int)], isDsChanged
 
   class TestDs(val id: String, val dataSetConfig: DataSetConfig) extends DataSet {
 
-    override def checksum: Option[String] = Some(if (isDsChanged) "checksum_2" else "checksum")
+    override def checksum: Option[String] = Some(if (isDsChanged) checksumInStorage + "_2" else checksumInStorage)
 
     override def timestamp: Option[Timestamp] = None
 
