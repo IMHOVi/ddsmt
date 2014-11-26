@@ -7,9 +7,11 @@ import java.sql.Timestamp
 /**
   * Created by skotlov on 11/13/14.
   */
-case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet], cmd: Command)(storage: Storage, val scheduler: Scheduler) extends Node {
+case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet], cmd: Command)
+               (storage: Storage, val scheduler: Scheduler) extends Node {
 
-  val displayName = "Rule %s (Input - [%s], Output - [%s])".format(name, input.map(_.displayName).mkString(", "), output.map(_.displayName).mkString(", "))
+  val displayName = "Rule %s (Input - [%s], Output - [%s])"
+    .format(name, input.map(_.displayName).mkString(", "), output.map(_.displayName).mkString(", "))
 
   @volatile
   var executed = false
@@ -56,7 +58,8 @@ case class Rule(name: String, input: Iterable[DataSet], output: Iterable[DataSet
     }
   }
 
-  private def isChanged(input: DataSet, changedTs: ArrayBuffer[(String, Option[Timestamp])], changedCs: ArrayBuffer[(String, Option[String])]): Boolean = {
+  private def isChanged(input: DataSet, changedTs: ArrayBuffer[(String, Option[Timestamp])],
+                        changedCs: ArrayBuffer[(String, Option[String])]): Boolean = {
     val cs = if (input.dataSetConfig.checkStrategy.isDefined)
       input.dataSetConfig.checkStrategy.get
     else

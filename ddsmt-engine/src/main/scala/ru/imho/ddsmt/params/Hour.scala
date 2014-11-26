@@ -60,7 +60,8 @@ object Hour {
     while (date != null) {
       val c = Calendar.getInstance()
       c.setTime(date)
-      val hour = new Hour(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH), c.get(Calendar.HOUR_OF_DAY), prevHour)
+      val hour = new Hour(c.get(Calendar.YEAR), c.get(Calendar.MONTH) + 1, c.get(Calendar.DAY_OF_MONTH),
+        c.get(Calendar.HOUR_OF_DAY), prevHour)
       hours += hour
       prevHour = Some(hour)
       date = cex.getNextValidTimeAfter(date)

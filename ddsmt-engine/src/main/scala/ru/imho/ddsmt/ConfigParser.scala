@@ -18,7 +18,8 @@ object ConfigParser {
   val dataSetFabric: Map[String, Node => DataSetConfig] = Map(
     "generic" -> (n => new GenericDsConfig((n \ "@id").text)),
     "directory" -> (n => new DirectoryDsConfig((n \ "@path").text, checkStrategy(n))),
-    "ftp" -> (n => new FtpDsConfig((n \ "@hostname").text, attrOpt(n, "username"), attrOpt(n, "password"), (n \ "@path").text, attrOpt(n, "fileNameRegex"), checkStrategy(n)))
+    "ftp" -> (n => new FtpDsConfig((n \ "@hostname").text, attrOpt(n, "username"), attrOpt(n, "password"),
+      (n \ "@path").text, attrOpt(n, "fileNameRegex"), checkStrategy(n)))
   )
 
   val commandFabric: Map[String, Node => CommandConfig] = Map(
@@ -55,7 +56,11 @@ object ConfigParser {
   private def attrOpt(n: Node, name: String): Option[String] =
     if ((n \ ("@" + name)).isEmpty) None else Some((n \ ("@" + name)).text)
 
-  private def checkStrategy(n: Node) = if ((n \ "@checkStrategy").isEmpty) None else Some(CheckStrategies.withName((n \ "@checkStrategy").text))
+  private def checkStrategy(n: Node) =
+    if ((n \ "@checkStrategy").isEmpty)
+      None
+    else
+      Some(CheckStrategies.withName((n \ "@checkStrategy").text))
 
   private def parseCommandPolicy(n: Node): CommandPolicy = {
     val expectedExecutionTime = attrOpt(n, "expectedExecutionTimeSec") match {

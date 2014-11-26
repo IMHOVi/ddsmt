@@ -27,7 +27,8 @@ class ExtCommand(commands: Iterable[String], val policy: CommandPolicy) extends 
       destroyProcess.get.cancel()
 
     if (r != 0) {
-      throw new RuntimeException("Ext command (%s) was executed with error. ErrorCode - %d".format(commands.mkString(", "), r))
+      throw new RuntimeException("Ext command (%s) was executed with error. ErrorCode - %d"
+        .format(commands.mkString(", "), r))
     }
   }
 }

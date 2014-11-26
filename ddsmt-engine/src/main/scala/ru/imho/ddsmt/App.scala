@@ -1,7 +1,7 @@
 package ru.imho.ddsmt
 
 import scala.annotation.tailrec
-import java.io.{File, PrintWriter}
+import java.io.PrintWriter
 
 /**
  * Created by skotlov on 10.11.2014.
@@ -60,7 +60,8 @@ object App {
     new Args(configFile, storageLocation, concurrencyDegree, dotExportFileName)
   }
 
-  class Args (val configFile: String, val storageLocation: String, val concurrencyDegree: Int, val dotExportFileName: Option[String])
+  class Args (val configFile: String, val storageLocation: String, val concurrencyDegree: Int,
+              val dotExportFileName: Option[String])
 
   private def writeToFile(fileName: String, text: String) {
     Utils.using(new PrintWriter(fileName)) {

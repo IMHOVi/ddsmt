@@ -67,7 +67,8 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
     }
 
     private def process() {
-      val ruleToExec = graph.nodes.filter(n => n.value.isInstanceOf[Rule] && !isRuleExecuting(n) && isRuleReadyToExecute(n))
+      val ruleToExec = graph.nodes
+        .filter(n => n.value.isInstanceOf[Rule] && !isRuleExecuting(n) && isRuleReadyToExecute(n))
         .map(_.value.asInstanceOf[Rule])
 
       if (!ruleToExec.isEmpty) {
@@ -75,10 +76,12 @@ class GraphService(params: Map[String, Iterable[Param]], rules: Iterable[RuleCon
         executingRules ++= ruleToExec
       } else {
         if (executedRules.size + failedRules.size == rulesNum) {
-          Logger.info("The graph was fully processed. Rules stat: success - %d, error - %d".format(executedRules.size, failedRules.size))
+          Logger.info("The graph was fully processed. Rules stat: success - %d, error - %d"
+            .format(executedRules.size, failedRules.size))
           context.system.shutdown()
         } else if (executedRules.size + failedRules.size == executingRules.size) {
-          Logger.error("The graph was not fully processed due to errors. Rules stat: success - %d, error - %d, not executed - %d".format(executedRules.size, failedRules.size, rulesNum - (executedRules.size + failedRules.size)))
+          Logger.error("The graph was not fully processed due to errors. Rules stat: success - %d, error - %d, not executed - %d"
+            .format(executedRules.size, failedRules.size, rulesNum - (executedRules.size + failedRules.size)))
           context.system.shutdown()
         }
       }

@@ -8,7 +8,8 @@ import ru.imho.ddsmt.Base._
 class FtpDsConfig(val hostname: String, val username: Option[String], val password: Option[String],
                   val path: String, val fileNameRegex: Option[String],
                   val checkStrategy: Option[CheckStrategies.Value]) extends DataSetConfig {
-  require(checkStrategy.isEmpty || checkStrategy.get == CheckStrategies.timestamp, "FtpDs supports only 'timestamp' CheckStrategy")
+  require(checkStrategy.isEmpty || checkStrategy.get == CheckStrategies.timestamp,
+    "FtpDs supports only 'timestamp' CheckStrategy")
 
   override def createDataSetInstance(): DataSet = new FtpDs(hostname, username, password, path, fileNameRegex, this)
 

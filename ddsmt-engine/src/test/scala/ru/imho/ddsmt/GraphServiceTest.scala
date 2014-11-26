@@ -162,14 +162,24 @@ class TGraphService(storage: Storage, cmdToFail: Set[(String, Int)], isDsChanged
     val cmdCreateVvAndUnique = new TestCommandConfig(createVvAndUnique)
     val cmdLoadVvToXodata = new TestCommandConfig(loadVvToXodata)
 
-    val loadLogsFromAdFoxRule = new RuleConfig(loadLogsFromAdFox, pd("everyHour", None), Iterable(afDs), Iterable(afLocalDs), cmdLoadLogsFromAdFox)
-    val convertXmlToParquetRule = new RuleConfig(convertXmlToParquet, pd("everyHour", None), Iterable(afLocalDs), Iterable(parqDs), cmdConvertXmlToParquet)
-    val sdToParquetRule = new RuleConfig(sdToParquet, pd("everyHour", None), Iterable(sdDs), Iterable(parqDs), cmdSdToParquet)
-    val createVvAndUniqueRule = new RuleConfig(createVvAndUnique, pd("everyHour", Some("everyHourFirst")), Iterable(parqDs, prevUniqDs), Iterable(vvDs, uniqDs), cmdCreateVvAndUnique)
-    val loadVvToXodataRule = new RuleConfig(loadVvToXodata, pd("everyHour", None), Iterable(vvDs), Iterable(xodataDs), cmdLoadVvToXodata)
-    val createVvAndUniqueFirstRule = new RuleConfig(createVvAndUnique, pd("everyHourFirst", None), Iterable(new TestDsConfig("parqDs/${everyHourFirst}")), Iterable(new TestDsConfig("vvDs/${everyHourFirst}"), new TestDsConfig("uniqDs/${everyHourFirst}")), cmdCreateVvAndUnique)
+    val loadLogsFromAdFoxRule = new RuleConfig(loadLogsFromAdFox, pd("everyHour", None), Iterable(afDs),
+      Iterable(afLocalDs), cmdLoadLogsFromAdFox)
+    val convertXmlToParquetRule = new RuleConfig(convertXmlToParquet, pd("everyHour", None), Iterable(afLocalDs),
+      Iterable(parqDs), cmdConvertXmlToParquet)
+    val sdToParquetRule = new RuleConfig(sdToParquet, pd("everyHour", None), Iterable(sdDs), Iterable(parqDs),
+      cmdSdToParquet)
+    val createVvAndUniqueRule = new RuleConfig(createVvAndUnique, pd("everyHour", Some("everyHourFirst")),
+      Iterable(parqDs, prevUniqDs), Iterable(vvDs, uniqDs), cmdCreateVvAndUnique)
+    val loadVvToXodataRule = new RuleConfig(loadVvToXodata, pd("everyHour", None), Iterable(vvDs), Iterable(xodataDs),
+      cmdLoadVvToXodata)
+    val createVvAndUniqueFirstRule = new RuleConfig(createVvAndUnique, pd("everyHourFirst", None),
+      Iterable(new TestDsConfig("parqDs/${everyHourFirst}")), Iterable(new TestDsConfig("vvDs/${everyHourFirst}"),
+        new TestDsConfig("uniqDs/${everyHourFirst}")), cmdCreateVvAndUnique)
 
-    val gs = new GraphService(params, Iterable(loadLogsFromAdFoxRule, convertXmlToParquetRule, sdToParquetRule, createVvAndUniqueRule, loadVvToXodataRule, createVvAndUniqueFirstRule), storage)
+    val gs = new GraphService(params,
+      Iterable(loadLogsFromAdFoxRule, convertXmlToParquetRule, sdToParquetRule, createVvAndUniqueRule,
+               loadVvToXodataRule, createVvAndUniqueFirstRule),
+      storage)
 
     val cmds = gs.allRules.map(_.cmd.asInstanceOf[TestCommand]).map(tc => ((tc.name, tc.hour), tc)).toMap
     assert(cmds.size == 15)
@@ -233,6 +243,7 @@ class TGraphService(storage: Storage, cmdToFail: Set[(String, Int)], isDsChanged
 
     override def createCommand(): Command = throw new UnsupportedOperationException
 
-    override def createCommand(param: Param, paramName: String): Command = new TestCommand(name, param.asInstanceOf[Hour].hour)
+    override def createCommand(param: Param, paramName: String): Command =
+      new TestCommand(name, param.asInstanceOf[Hour].hour)
   }
 }

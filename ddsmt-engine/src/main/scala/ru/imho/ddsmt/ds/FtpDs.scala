@@ -9,9 +9,11 @@ import ru.imho.ddsmt.Logger
 /**
  * Created by skotlov on 11/18/14.
  */
-class FtpDs(hostname: String, username: Option[String], password: Option[String], path: String, fileNameRegex: Option[String], dsc: DataSetConfig) extends DataSet {
+class FtpDs(hostname: String, username: Option[String], password: Option[String], path: String,
+            fileNameRegex: Option[String], dsc: DataSetConfig) extends DataSet {
 
-  override def id: String = "Ftp(hostname: %s, path: %s, files: %s)".format(hostname, path, fileNameRegex.getOrElse("all"))
+  override def id: String = "Ftp(hostname: %s, path: %s, files: %s)"
+    .format(hostname, path, fileNameRegex.getOrElse("all"))
 
   override def dataSetConfig: DataSetConfig = dsc
 
@@ -19,13 +21,15 @@ class FtpDs(hostname: String, username: Option[String], password: Option[String]
 
   override def timestamp: Option[Timestamp] = {
     var max = 0L
-    traverseAllFtpFiles(hostname, username, password, path, fileNameRegex, f => { max = Math.max(max, f.getTimestamp.getTimeInMillis) })
+    traverseAllFtpFiles(hostname, username, password, path, fileNameRegex,
+      f => { max = Math.max(max, f.getTimestamp.getTimeInMillis) })
     if (max == 0L) None else Some(new Timestamp(max))
   }
 
   override def displayName: String = id
 
-  private def traverseAllFtpFiles(hostname: String, username: Option[String], password: Option[String], path: String, fileNameRegex: Option[String], h: FTPFile => Unit): Unit = {
+  private def traverseAllFtpFiles(hostname: String, username: Option[String], password: Option[String], path: String,
+                                  fileNameRegex: Option[String], h: FTPFile => Unit): Unit = {
     val ftp = new FTPClient()
     try {
       ftp.connect(hostname)

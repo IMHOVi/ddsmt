@@ -9,5 +9,6 @@ class ExtCommandConfig(commands: Iterable[String], policy: CommandPolicy) extend
 
   override def createCommand(): Command = new ExtCommand(commands, policy)
 
-  override def createCommand(param: Param, paramName: String): Command = new ExtCommand(commands.map(c => param.applyToString(c, paramName)), policy)
+  override def createCommand(param: Param, paramName: String): Command =
+    new ExtCommand(commands.map(c => param.applyToString(c, paramName)), policy)
 }

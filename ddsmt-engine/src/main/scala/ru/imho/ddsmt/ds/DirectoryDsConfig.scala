@@ -9,5 +9,6 @@ class DirectoryDsConfig(val path: String, val checkStrategy: Option[CheckStrateg
 
   override def createDataSetInstance(): DataSet = new DirectoryDs(path, this)
 
-  override def createDataSetInstance(param: Param, paramName: String): DataSet = new DirectoryDs(param.applyToString(path, paramName), this)
+  override def createDataSetInstance(param: Param, paramName: String): DataSet =
+    new DirectoryDs(param.applyToString(path, paramName), this)
 }
