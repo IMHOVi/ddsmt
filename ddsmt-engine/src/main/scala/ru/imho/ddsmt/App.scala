@@ -57,6 +57,10 @@ object App {
     }
 
     parse(args.toList)
+
+    if (concurrencyDegree < 1 || concurrencyDegree > 50)
+      throw new IllegalArgumentException("The range of allowed values of 'concurrencyDegree' - [1,50]")
+
     new Args(configFile, storageLocation, concurrencyDegree, dotExportFileName)
   }
 
